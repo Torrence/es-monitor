@@ -1,0 +1,81 @@
+version: '2'
+services:
+  cerebro:
+    build: ./cerebro/.
+    # image: desp0916/cerebro:0.6.5
+    ports:
+      - 9000:9000
+    networks:
+      - esnet
+  elasticsearch1:
+    image: elasticsearch:5.2.2
+    container_name: elasticsearch1
+    environment:
+      - cluster.name=King's Landing
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    mem_limit: 1g
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+      - ./elasticsearch/config/scripts/:/usr/share/elasticsearch/config/scripts/
+    ports:
+      - 1200:9200
+      - 1300:9300
+    networks:
+      - esnet
+  elasticsearch2:
+    image: elasticsearch:5.2.2
+    container_name: elasticsearch2
+    environment:
+      - cluster.name=King's Landing
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch1"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    mem_limit: 1g
+    ports:
+      - 1201:9200
+      - 1301:9300
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+      - ./elasticsearch/config/scripts/:/usr/share/elasticsearch/config/scripts/
+    networks:
+      - esnet
+  kibana1:
+    image: kibana:5.2.2
+    volumes:
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - 2017:5601
+    networks:
+      - esnet
+    depends_on:
+      - elasticsearch1
+      - elasticsearch2
+
+volumes:
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local
+
+networks:
+  esnet:
+    driver: bridge
